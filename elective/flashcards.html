@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flash Cards - Teacher LMS</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{
+  --bg-light:#f4f6fc;
+  --bg-dark:#121212;
+  --card-light:#0d6efd;
+  --card-back:#198754;
+  --text-light:#fff;
+  --text-dark:#000;
+}
+body{background:var(--bg-light);font-family:'Segoe UI',sans-serif;transition:all .3s;color:var(--text-dark);}
+body.dark{background:var(--bg-dark);color:var(--text-light);}
+.navbar{box-shadow:0 4px 12px rgba(0,0,0,.08);}
+.flash-card{
+  background:var(--card-light);
+  color:var(--text-light);
+  border-radius:10px;
+  padding:20px;
+  text-align:center;
+  cursor:pointer;
+  min-height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .5s;
+  perspective:1000px;
+  font-weight:bold;
+  font-size:1.1rem;
+}
+.flash-card.back{background:var(--card-back);}
+.flash-card.animate{transform:rotateY(180deg);}
+input{border-radius:8px;}
+button{transition:all .2s;}
+button:hover{transform:translateY(-2px);}
+/* container for flash cards */
+#flashList .col-md-3{transition:all .3s;}
+.counter{margin-bottom:10px;font-weight:bold;}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
+<a class="navbar-brand" href="index.html">Teacher LMS</a>
+<button class="btn btn-outline-light btn-sm ms-auto me-2" onclick="toggleDarkMode()"><i class="bi bi-moon-fill"></i></button>
+<button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+</nav>
+
+<!-- Back to Home Button -->
+<div class="container mt-3">
+  <button class="btn btn-secondary mb-3" onclick="window.location.href='dashboard.html'"><i class="bi bi-house-door"></i> Back to Home</button>
+</div>
+
+<div class="container mt-2">
+<h3>Flash Cards <span class="counter" id="flashCount">(0)</span></h3>
+<div class="row mb-3 g-2">
+  <div class="col"><input id="fq" class="form-control" placeholder="Question"></div>
+  <div class="col"><input id="fa" class="form-control" placeholder="Answer"></div>
+  <div class="col-2 d-flex gap-2">
+    <button class="btn btn-success w-100" onclick="addFlash()"><i class="bi bi-plus-circle"></i> Add</button>
+    <button class="btn btn-warning w-100" onclick="shuffleFlash()"><i class="bi bi-shuffle"></i></button>
+    <button class="btn btn-danger w-100" onclick="clearFlash()"><i class="bi bi-trash"></i></button>
+  </div>
+</div>
+<div class="row g-3" id="flashList"></div>
+</div>
+
+<script>
+function logout(){
+  if(confirm("Are you sure you want to logout?")) window.location.href="login.html";
+}
+
+/* Dark Mode Toggle */
+function toggleDarkMode(){
+  document.body.classList.toggle('dark');
+}
+
+/* Load flash cards */
+let flash = JSON.parse(localStorage.getItem('flash')||'[]');
+let flashList = document.getElementById('flashList');
+let flashCount = document.getElementById('flashCount');
+
+function updateCounter(){
+  flashCount.innerText = `(${flash.length})`;
+}
+
+function addFlash(){
+  if(!fq.value || !fa.value) return alert('Enter question and answer.');
+  flash.push({q:fq.value,a:fa.value});
+  localStorage.setItem('flash',JSON.stringify(flash));
+  fq.value=fa.value='';
+  renderFlash();
+  addActivity(`Added Flash Card: ${flash[flash.length-1].q}`);
+}
+
+function renderFlash(){
+  flashList.innerHTML='';
+  flash.forEach((f,i)=>{
+    const col = document.createElement('div');
+    col.className='col-md-3';
+    col.innerHTML=`
+      <div class="flash-card" onclick="flipCard(this,'${f.q}','${f.a}')">${f.q}</div>
+      <button class="btn btn-danger btn-sm w-100 mt-1" onclick="deleteFlash(${i})">Delete</button>
+    `;
+    flashList.appendChild(col);
+  });
+  updateCounter();
+}
+
+function flipCard(el, q, a){
+  el.classList.toggle('back');
+  el.innerText = el.classList.contains('back') ? a : q;
+  el.classList.add('animate');
+  setTimeout(()=>el.classList.remove('animate'),300);
+}
+
+function deleteFlash(i){
+  addActivity(`Deleted Flash Card: ${flash[i].q}`);
+  flash.splice(i,1);
+  localStorage.setItem('flash',JSON.stringify(flash));
+  renderFlash();
+}
+
+function shuffleFlash(){
+  for(let i=flash.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [flash[i],flash[j]]=[flash[j],flash[i]];
+  }
+  localStorage.setItem('flash',JSON.stringify(flash));
+  renderFlash();
+  addActivity('Shuffled Flash Cards');
+}
+
+function clearFlash(){
+  if(confirm('Are you sure you want to delete all flash cards?')){
+    addActivity('Cleared all Flash Cards');
+    flash=[];
+    localStorage.setItem('flash',JSON.stringify(flash));
+    renderFlash();
+  }
+}
+
+/* Activity log for flash cards */
+function addActivity(text){
+  let recentActivities = JSON.parse(localStorage.getItem('recentActivities')||'[]');
+  recentActivities.push(text);
+  localStorage.setItem('recentActivities',JSON.stringify(recentActivities));
+}
+
+renderFlash();
+</script>
+
+</body>
+</html>
